@@ -21,6 +21,7 @@ import sys
 import time
 import math
 import random
+import cv2
 from PIL import Image
 from six.moves import input
 try:
@@ -268,7 +269,44 @@ def spilt_target_image():
     im = Image.open('./autojump.png')
     region = im.crop((100, 250, 500, 420))
     region.save("./spilt.png")
+    #
+
     im.close()
+
+    img = cv2.imread("./spilt.png")
+    GrayImage = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    ret, thresh1 = cv2.threshold(GrayImage, 127, 255, cv2.THRESH_BINARY)
+    cv2.imwrite("./spilt_bin.png", thresh1)
+
+    im = Image.open('./spilt_bin.png')
+    w, h = im.size
+    im_pixel = im.load()
+
+
+    count = 0
+    x_start = 0;
+    x_end = 0;
+    for x in range(0, w):
+        for y in range(0, h):
+            print('x,y,pixel:' + str(x) + ',' + str(y) + ',' + str(im_pixel[x, y]) + ',' + str(im_pixel[x, 0 + 50]))
+
+    for x in range(0, w):
+        for y in range(0, h):
+            if (count / 2 == 0):
+                if (im_pixel[x, y] != im_pixel[x, 0 + 50]):  # first start search
+                    count = count + 1
+                    x_start = x
+                    print('x_start = ' + str(x))
+                    break
+            else:
+                if (im_pixel[x, y] != im_pixel[x, 0 + 50]):  # end search
+                    break
+                if (y == h):
+                    x_end = x
+                    print('x_end = ' + str(x))
+                    break
+    #
+
 
 
 def main():
