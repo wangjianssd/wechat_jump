@@ -40,7 +40,7 @@ VERSION = "1.1.1"
 
 # DEBUG 开关，需要调试的时候请改为 True，不需要调试的时候为 False
 DEBUG_SWITCH = False
-target_score = 250
+target_score = 590
 current_score = 0
 finnal_score = 1001
 
@@ -248,20 +248,68 @@ def pyocr_init():
     # to use.
     return tool, lang
 
-def find_current_score(tool, lang):
-    spilt_target_image()
-    txt = tool.image_to_string(
-        Image.open('./spilt.png'),
-        lang=lang,
-        builder=pyocr.builders.DigitBuilder()
-    )
-    print(txt)
-    num = 0
-    for data in txt:
-        if data>='0' and data <='9':
-            num = 10 * num + int(data)
+def image_diff_compare(image1, image2):
+    im1 = Image.open(image1)
+    w, h = im1.size
+    im1_pixel = im1.load()
 
-    return num
+    im2 = Image.open(image2)
+    w1, h1 = im2.size
+    im2_pixel = im2.load()
+
+    if w > w1:
+        w = w1
+
+    if h > h1:
+        h = h1
+    sum = 0
+    for x in range (0, w):
+        for y in range (0, h):
+            sum = sum + abs(im1_pixel[x, y] - im2_pixel[x, y])
+
+    #print('sum is: ' + str(sum))
+    return sum
+
+def find_current_score(tool, lang):
+    pic_num = spilt_target_image()
+    ret = 0
+    for i in range(0, pic_num):
+        file_name = './spilt' + str(i)  + '.png'
+        min_num = 0
+        min_diff = 1000000
+        for j in range(0, 10):
+            compare_file_name = './compare_ file/num' + str(j) + '.png'
+            diff = image_diff_compare(file_name, compare_file_name)
+
+            if diff <= min_diff:
+                min_diff = diff
+                min_num = j
+            #print(file_name + ' VS ' + compare_file_name + ' is ' + str(diff))
+
+        ret = ret * 10 + min_num
+        print(file_name + 'is: ' + str(min_num))
+
+    return ret
+        #print(file_name)
+        #txt = tool.image_to_string(
+        #    Image.open(file_name),
+        #    lang=lang,
+        #    builder=pyocr.builders.DigitBuilder()
+        #)
+        #print(file_name + ' is:' + txt)
+
+    #txt = tool.image_to_string(
+    #    Image.open('./spilt.png'),
+    #    lang=lang,
+    #    builder=pyocr.builders.DigitBuilder()
+    #)
+    #print(txt)
+    #num = 0
+    #for data in txt:
+    #    if data>='0' and data <='9':
+    #        num = 10 * num + int(data)#
+
+    #return num
    # return int(txt)
 
 
@@ -286,13 +334,13 @@ def spilt_target_image():
     count = 0
     x_start = 0;
     x_end = 0;
+    #for x in range(0, w):
+    #    for y in range(0, h):
+    #        print('x,y,pixel:' + str(x) + ',' + str(y) + ',' + str(im_pixel[x, y]) + ',' + str(im_pixel[x, 0 + 50]))
+    num = 0
     for x in range(0, w):
         for y in range(0, h):
-            print('x,y,pixel:' + str(x) + ',' + str(y) + ',' + str(im_pixel[x, y]) + ',' + str(im_pixel[x, 0 + 50]))
-
-    for x in range(0, w):
-        for y in range(0, h):
-            if (count / 2 == 0):
+            if (count % 2 == 0):
                 if (im_pixel[x, y] != im_pixel[x, 0 + 50]):  # first start search
                     count = count + 1
                     x_start = x
@@ -301,11 +349,17 @@ def spilt_target_image():
             else:
                 if (im_pixel[x, y] != im_pixel[x, 0 + 50]):  # end search
                     break
-                if (y == h):
+                if (y == (h - 1)):
+                    count = count + 1
                     x_end = x
                     print('x_end = ' + str(x))
+
+                    region = im.crop((x_start, 0, x_end, h))
+                    region.save("./spilt" + str(num) + ".png")
+                    num = num + 1
                     break
     #
+    return num
 
 
 
